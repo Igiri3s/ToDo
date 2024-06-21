@@ -20,7 +20,7 @@ class Task(models.Model):
 
 class BackLog(models.Model):
     id = models.AutoField(primary_key=True)
-    task_data = models.JSONField(default=dict)   # Możesz użyć JSONField do przechowywania danych o tasku
+    task_data = models.JSONField(default=dict)
     modification_date = models.DateTimeField(auto_now=True)
 
     @classmethod
