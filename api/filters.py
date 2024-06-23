@@ -37,6 +37,7 @@ class BackLogFilter(django_filters.FilterSet):
     description = JSONCharFilter(field_name='task_data__description')
     status = JSONExactFilter(field_name='task_data__status')
     assignedUser = JSONExactFilter(field_name='task_data__assignedUser')
+    task_id = JSONCharFilter(field_name='task_data__task_id')
 
     class Meta:
         model = BackLog
