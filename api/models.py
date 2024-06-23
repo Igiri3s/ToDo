@@ -27,7 +27,7 @@ class BackLog(models.Model):
     def set_backlog_data(cls, task):
 
         task_data = {
-            'id': task.id,
+            'task_id': task.id,
             'name': task.name,
             'description': task.description,
             'assignedUser': task.assignedUser.email if task.assignedUser else None,

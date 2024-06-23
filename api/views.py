@@ -1,41 +1,31 @@
 # views.py
-import django_filters
-from django_filters import filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, generics
-from .models import Task, BackLog,Status
+
+from .filters import TaskFilter, BackLogFilter
+from .models import Task, BackLog, Status
 from .serializer import TaskSerializer, BackLogSerializer, TaskPartialUpdateSerializer
-
-
-
-class TaskFilter(django_filters.FilterSet):
-    name = filters.CharFilter(field_name='name', lookup_expr='contains')
-    description = filters.CharFilter(field_name='description', lookup_expr='contains')
-
-    class Meta:
-        model = Task
-        fields = {
-            'id': ['exact'],
-            'name': ['contains'],
-            'description': ['contains'],
-            'status': ['exact'],
-            'assignedUser': ['exact'],
-        }
+from .permissions import IsAuthenticatedCustom
+from rest_framework.permissions import IsAdminUser
 
 
 class TaskViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticatedCustom]
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
     filterset_class = TaskFilter
 
 
 class BacklogViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticatedCustom]
+    filterset_class = BackLogFilter
     queryset = BackLog.objects.all()
     serializer_class = BackLogSerializer
 
 
 class TaskCreateView(APIView):
+    permission_classes = [IsAuthenticatedCustom]
     def post(self, request, *args, **kwargs):
         task_serializer = TaskSerializer(data=request.data)
 
@@ -44,8 +34,7 @@ class TaskCreateView(APIView):
             backlog_data = create_backlog(task.id)
             return Response(
                 data={
-                    'task': task_serializer.data,
-                    'backlog': backlog_data
+                    'task': task_serializer.data
                 },
                 status=status.HTTP_201_CREATED
             )
@@ -55,8 +44,9 @@ class TaskCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-#Ogarnij co chat powie na temat tej klasy, nie dokońca rozumiem czemu tutaj jest generic a u góry nie
+
 class TaskPartialUpdateView(generics.UpdateAPIView):
+    permission_classes = [IsAuthenticatedCustom]
     queryset = Task.objects.all()
     serializer_class = TaskPartialUpdateSerializer
 
@@ -75,6 +65,7 @@ class TaskPartialUpdateView(generics.UpdateAPIView):
 
 
 class TaskDeleteView(generics.DestroyAPIView):
+    permission_classes = [IsAuthenticatedCustom, IsAdminUser]
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
 
@@ -87,12 +78,14 @@ class TaskDeleteView(generics.DestroyAPIView):
 
     def delete(self, request, *args, **kwargs):
         task = self.get_object()
+        task_id = task.id
         if Task is not None:
             remove_task_and_adjust_backlog(task.id)
             task.delete()
-            return Response({"message": f"Task nr {task.id} deleted"}, status=status.HTTP_204_NO_CONTENT)
+            return Response({"message": f"Task nr {task_id} deleted"}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"error": "No such task"}, status=status.HTTP_404_NOT_FOUND)
+
 
 def create_backlog(task_id):
     task = Task.objects.get(id=task_id)
